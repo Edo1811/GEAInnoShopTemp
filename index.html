@@ -39,12 +39,9 @@
     .ghost{background:var(--muted);color:var(--text)}
 
     /* Search + controls */
-    .controls{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0;justify-content:center;align-items:center}
+    .controls{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
     .input, select{background:var(--muted);border:1px solid #252a38;color:var(--text);padding:10px 12px;border-radius:12px;outline:none;min-width:180px}
     .input:focus, select:focus{border-color:var(--brand)}
-    /* Centered big search, smaller sort on the left */
-    #search{order:1;flex:1 1 640px;max-width:720px;min-width:280px;padding:14px 16px;font-size:1.05rem}
-    #sortSelect{order:0;flex:0 0 auto;min-width:140px;font-size:.95rem}
 
     /* Grid */
     .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
@@ -94,21 +91,6 @@
       .modal-body{grid-template-columns:1fr}
       .kv{grid-template-columns:120px 1fr}
     }
-      /* Light theme overrides */
-    :root[data-theme='light']{
-      --bg:#f7f8fb;
-      --panel:#ffffff;
-      --muted:#eef1f7;
-      --text:#0b0c10;
-      --sub:#4a5161;
-      --brand:#6ea8ff;
-      --brand-2:#97ffce;
-      --danger:#ff6b6b;
-      --ok:#1a9f1a;
-      --radius:16px;
-      --shadow:0 10px 30px rgba(0,0,0,.08);
-    }
-    :root[data-theme='light'] header{background:linear-gradient(180deg, rgba(255,255,255,.95), rgba(255,255,255,.85));border-bottom:1px solid #e1e6f0}
   </style>
 </head>
 <body>
@@ -133,7 +115,6 @@
         <button data-route="about" aria-controls="about">About&nbsp;Us</button>
       </div>
       <div class="right-actions">
-        <button id="themeToggle" class="pill ghost" aria-pressed="false" title="Toggle light/dark">🌙</button>
         <button id="loginBtn" class="pill ghost" aria-haspopup="dialog">Login</button>
         <button id="kartBtn" class="pill" aria-haspopup="dialog">Kart <span id="kartCount" class="badge" aria-live="polite">0</span></button>
       </div>
@@ -374,30 +355,6 @@
     const qsa = (sel, el=document) => [...el.querySelectorAll(sel)];
 
     const fmt = (n) => new Intl.NumberFormat(undefined,{style:'currency',currency:'EUR'}).format(n);
-
-    // ---- Theme (light/dark) ----
-    const THEME_KEY = 'site_theme';
-    function applyTheme(theme){
-      document.documentElement.setAttribute('data-theme', theme);
-      try{ localStorage.setItem(THEME_KEY, theme); }catch{}
-      const btn = document.getElementById('themeToggle');
-      if(btn){
-        const isDark = theme === 'dark';
-        btn.setAttribute('aria-pressed', (!isDark).toString());
-        btn.textContent = isDark ? '🌙' : '☀️';
-        btn.title = isDark ? 'Switch to light mode' : 'Switch to dark mode';
-      }
-    }
-    function initTheme(){
-      let theme = 'dark';
-      try{
-        const saved = localStorage.getItem(THEME_KEY);
-        if(saved){ theme = saved; }
-        else if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){ theme = 'dark'; }
-        else { theme = 'light'; }
-      }catch{}
-      applyTheme(theme);
-    }
 
     const STORAGE_KEYS = {
       accounts: 'shop_accounts',
@@ -741,10 +698,40 @@
           const pass = qs('#authPass').value;
           await login(email, pass);
           qs('#authModal').close();
+        }catch(e){ alert(e.message); }
+      });
+      qs('#doSignup').addEventListener('click', async ()=>{
+        try{
+          const email = qs('#authEmail').value.trim();
+          const pass = qs('#authPass').value;
+          const name = qs('#authName').value.trim();
+          const payment = { label: qs('#payLabel').value.trim(), address: qs('#payAddr').value.trim() };
+          if(!email || !pass) throw new Error('Email and password required');
+          await signup({email,password:pass,displayName:name,payment});
+          qs('#authModal').close();
+        }catch(e){ alert(e.message); }
+      });
+      // Info/About editors
+      initEditable('Info');
+      initEditable('About');
+      // Exports / Imports
+      qs('#exportAccounts').addEventListener('click',exportAccounts);
+      qs('#exportItems').addEventListener('click',exportItems);
+      qs('#exportKarts').addEventListener('click',exportGuestKart);
+      qs('#importAccounts').addEventListener('change', (e)=>{
+        const f = e.target.files?.[0]; if(!f) return;
+        importJson(f, (data)=>{ if(!data.users){ alert('accounts.json must have {"users": [...]}'); return; } state.accounts=data; saveAccountsLocally(); setActiveUser(null); alert('Accounts imported.'); });
+      });
+      qs('#importItems').addEventListener('change', (e)=>{
+        const f = e.target.files?.[0]; if(!f) return;
+        importJson(f, (data)=>{ if(!data.items){ alert('shopitems.json must have {"items": [...]}'); return; } state.items=data.items; localStorage.setItem(STORAGE_KEYS.items, JSON.stringify(state.items)); renderGrid(); alert('Items imported.'); });
+      });
+      // Close modals with ESC
+      qsa('dialog').forEach(d=> d.addEventListener('cancel', e=>{ e.preventDefault(); d.close(); }));
+    }
 
     // -------------- Init --------------
     (async function init(){
-      initTheme();
       await Promise.all([loadItems(), loadAccounts()]);
       wire();
       renderGrid();
