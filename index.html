@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>My Shop Template</title>
+  <style>
+    /* ==========================
+       Minimal, clean, responsive UI
+       ========================== */
+    :root{
+      --bg:#0b0c10; /* dark base */
+      --panel:#111319; /* cards */
+      --muted:#1a1d25;
+      --text:#e6e7eb;
+      --sub:#a5a9b6;
+      --brand:#6ea8ff; /* primary */
+      --brand-2:#97ffce; /* accent */
+      --danger:#ff6b6b;
+      --ok:#88ff88;
+      --radius:16px;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif}
+    a{color:inherit;text-decoration:none}
+    .wrap{max-width:1100px;margin:0 auto;padding:16px}
+
+    /* Header / Nav */
+    header{position:sticky;top:0;z-index:50;background:linear-gradient(180deg, rgba(11,12,16,.95), rgba(11,12,16,.75));backdrop-filter:saturate(1.1) blur(8px);border-bottom:1px solid #1f2330}
+    .nav{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.4px}
+    .badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--brand);color:#0a0d14;font-size:12px;font-weight:700}
+    .tabbar{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+    .tabbar button{background:transparent;border:0;color:var(--sub);padding:8px 12px;border-radius:10px;cursor:pointer}
+    .tabbar button.active{color:var(--text);background:var(--muted)}
+    .right-actions{display:flex;gap:8px;align-items:center}
+    .pill{background:var(--brand);color:#0a0d14;border:0;padding:8px 12px;border-radius:999px;font-weight:700;cursor:pointer}
+    .ghost{background:var(--muted);color:var(--text)}
+
+    /* Search + controls */
+    .controls{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+    .input, select{background:var(--muted);border:1px solid #252a38;color:var(--text);padding:10px 12px;border-radius:12px;outline:none;min-width:180px}
+    .input:focus, select:focus{border-color:var(--brand)}
+
+    /* Grid */
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+    .card{background:var(--panel);border:1px solid #1e2230;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+    .card .img{width:100%;aspect-ratio:4/3;background:#0f121b center/cover no-repeat}
+    .card .meta{padding:12px}
+    .price{font-weight:800}
+    .sub{color:var(--sub);font-size:14px}
+    .card .actions{display:flex;gap:8px;padding:12px}
+
+    /* Routes */
+    main{min-height:60vh}
+    .route{display:none}
+    .route.active{display:block}
+
+    /* Panels */
+    .panel{background:var(--panel);border:1px solid #1e2230;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+
+    /* Modals / Drawer */
+    dialog{border:0;border-radius:20px;max-width:900px;width:min(92vw,900px);background:var(--panel);color:var(--text);box-shadow:var(--shadow)}
+    dialog::backdrop{background:rgba(0,0,0,.6)}
+    .modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px;border-bottom:1px solid #22283a;padding-bottom:8px}
+    .close{background:transparent;border:0;color:var(--sub);font-size:22px;cursor:pointer}
+    .modal-body{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
+    .modal-img{width:100%;aspect-ratio:4/3;background:#0f121b center/cover no-repeat;border-radius:14px;border:1px solid #1f2333}
+    .qty{display:flex;align-items:center;gap:8px}
+
+    /* Kart Drawer */
+    .drawer{position:fixed;inset:0 0 0 auto;max-width:480px;width:92vw;background:var(--panel);border-left:1px solid #1f2333;transform:translateX(101%);transition:transform .25s ease;display:flex;flex-direction:column;z-index:60}
+    .drawer.open{transform:none}
+    .drawer header{position:sticky;top:0}
+    .drawer .content{padding:16px;display:flex;flex-direction:column;gap:12px;overflow:auto}
+    .item{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;background:var(--muted);border:1px solid #22283a;border-radius:12px;padding:8px}
+    .thumb{width:64px;height:64px;background:#0f121b center/cover no-repeat;border-radius:8px}
+    .totals{margin-top:auto;border-top:1px solid #20273a;padding-top:12px}
+
+    /* Tables / lists */
+    .kv{display:grid;grid-template-columns:150px 1fr;gap:8px 12px}
+    .muted{color:var(--sub)}
+
+    /* Footer */
+    footer{border-top:1px solid #1f2333;margin-top:32px}
+    footer .wrap{display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+
+    /* Small screens */
+    @media (max-width: 800px){
+      .modal-body{grid-template-columns:1fr}
+      .kv{grid-template-columns:120px 1fr}
+    }
+  </style>
+</head>
+<body>
+  <!-- =====================================================
+       ⚠️ IMPORTANT SECURITY NOTE (read this before using)
+       - This template stores accounts, karts, and payment *labels* in JSON.
+       - Do NOT store real card numbers, CVV, or full addresses in plaintext JSON.
+       - In production, use a real backend + payment provider (Stripe, etc.),
+         tokenization, TLS, and proper authentication.
+       - This is a learning template you can later hook to your server.
+       ===================================================== -->
+
+  <header>
+    <div class="wrap nav" role="navigation" aria-label="Main">
+      <div class="brand">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--brand),var(--brand-2));font-weight:900;color:#081019">S</span>
+        <span>Shop Template</span>
+      </div>
+      <div class="tabbar" id="tabbar">
+        <button data-route="home" class="active" aria-controls="home">Home</button>
+        <button data-route="info" aria-controls="info">Info</button>
+        <button data-route="about" aria-controls="about">About&nbsp;Us</button>
+      </div>
+      <div class="right-actions">
+        <button id="loginBtn" class="pill ghost" aria-haspopup="dialog">Login</button>
+        <button id="kartBtn" class="pill" aria-haspopup="dialog">Kart <span id="kartCount" class="badge" aria-live="polite">0</span></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- HOME / SHOP -->
+    <section id="home" class="route active" aria-labelledby="home-tab">
+      <div class="controls">
+        <input id="search" class="input" placeholder="Search products..." aria-label="Search products" />
+        <select id="sortSelect" aria-label="Sort products">
+          <option value="relevance">Sort: Relevance</option>
+          <option value="price-asc">Price: Low → High</option>
+          <option value="price-desc">Price: High → Low</option>
+          <option value="name">Name A → Z</option>
+        </select>
+      </div>
+      <div id="grid" class="grid" aria-live="polite"></div>
+    </section>
+
+    <!-- INFO (editable content) -->
+    <section id="info" class="route">
+      <div class="panel">
+        <div class="modal-head">
+          <h2 style="margin:0">Info</h2>
+          <div style="display:flex;gap:8px">
+            <button id="editInfo" class="pill ghost">Edit</button>
+            <button id="saveInfo" class="pill" title="Saves to localStorage">Save</button>
+          </div>
+        </div>
+        <div id="infoContent" contenteditable="false" style="line-height:1.6">
+          <h3>About Our Products</h3>
+          <p>Use this space to explain what your products are about, how they’re made, sizing, materials, care tips, warranty, etc. Click <strong>Edit</strong> to modify this text and <strong>Save</strong> to persist it locally.</p>
+          <ul>
+            <li>High-quality materials</li>
+            <li>Fast shipping</li>
+            <li>Easy returns</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT US (editable content) -->
+    <section id="about" class="route">
+      <div class="panel">
+        <div class="modal-head">
+          <h2 style="margin:0">About Us</h2>
+          <div style="display:flex;gap:8px">
+            <button id="editAbout" class="pill ghost">Edit</button>
+            <button id="saveAbout" class="pill" title="Saves to localStorage">Save</button>
+          </div>
+        </div>
+        <div id="aboutContent" contenteditable="false" style="line-height:1.6">
+          <p>Write your brand story here — who you are, your mission, your team, and why customers can trust you. Edit and save to customize.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- PRODUCT MODAL -->
+  <dialog id="productModal" aria-modal="true">
+    <div class="modal-head">
+      <strong id="pmTitle">Product</strong>
+      <button class="close" data-close>×</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <div id="pmImg" class="modal-img" role="img" aria-label="Product image"></div>
+      </div>
+      <div>
+        <div class="kv" style="margin-bottom:12px">
+          <div class="muted">Price</div>
+          <div id="pmPrice" class="price"></div>
+          <div class="muted">Description</div>
+          <div id="pmDesc"></div>
+        </div>
+        <div class="qty" style="margin:10px 0 16px">
+          <label for="pmQty" class="muted">Qty</label>
+          <input id="pmQty" class="input" type="number" value="1" min="1" style="width:110px" />
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button id="addToKartBtn" class="pill">Add to Kart</button>
+          <button id="buyNowBtn" class="pill ghost">Buy Now</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- LOGIN / SIGNUP MODAL -->
+  <dialog id="authModal" aria-modal="true">
+    <div class="modal-head">
+      <strong>Login / Create Account</strong>
+      <button class="close" data-close>×</button>
+    </div>
+    <div class="panel" style="background:transparent;border:none;padding:0">
+      <div class="kv">
+        <label class="muted" for="authEmail">Email</label>
+        <input id="authEmail" class="input" type="email" placeholder="you@example.com" />
+        <label class="muted" for="authPass">Password</label>
+        <input id="authPass" class="input" type="password" placeholder="••••••••" />
+        <div class="muted">Display Name</div>
+        <input id="authName" class="input" type="text" placeholder="(for signup)" />
+      </div>
+      <p class="muted" style="margin-top:10px">Optional saved payment label (for demo only — don’t store real card data!):</p>
+      <div class="kv" style="margin-top:8px">
+        <div class="muted">Payment Label</div>
+        <input id="payLabel" class="input" placeholder="e.g. Visa ending *1234" />
+        <div class="muted">Billing Address</div>
+        <input id="payAddr" class="input" placeholder="City, Country (no street numbers)" />
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button id="doLogin" class="pill">Login</button>
+        <button id="doSignup" class="pill ghost">Create Account</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- KART DRAWER -->
+  <aside id="kartDrawer" class="drawer" aria-label="Shopping Kart" aria-hidden="true">
+    <header>
+      <div class="wrap nav" style="padding:12px 16px">
+        <div style="font-weight:800">Your Kart</div>
+        <button id="closeKart" class="close" aria-label="Close">×</button>
+      </div>
+    </header>
+    <div class="content" id="kartContent"></div>
+    <div class="content">
+      <div class="totals">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="muted">Subtotal</div>
+          <div id="subtotal" class="price">€0.00</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button id="checkoutBtn" class="pill" style="flex:1">Checkout</button>
+          <button id="clearKartBtn" class="pill ghost" style="flex:1">Clear</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CHECKOUT MODAL -->
+  <dialog id="checkoutModal" aria-modal="true">
+    <div class="modal-head">
+      <strong>Checkout</strong>
+      <button class="close" data-close>×</button>
+    </div>
+    <div class="panel" style="background:transparent;border:none;padding:0">
+      <div id="checkoutSummary" class="kv" style="margin-bottom:12px"></div>
+      <div class="kv">
+        <div class="muted">Pay with</div>
+        <select id="checkoutPayment" class="input"></select>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button id="placeOrderBtn" class="pill">Place Order</button>
+        <button data-close class="pill ghost">Cancel</button>
+      </div>
+    </div>
+  </dialog>
+
+  <footer>
+    <div class="wrap" style="padding:14px 0">
+      <div class="muted">Export / Import data (for hooking to your server later)</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="exportAccounts" class="pill ghost">Export accounts.json</button>
+        <button id="exportKarts" class="pill ghost">Export current kart (guest)</button>
+        <button id="exportItems" class="pill ghost">Export shopitems.json</button>
+        <label class="pill ghost" style="cursor:pointer">
+          Import accounts.json
+          <input id="importAccounts" type="file" accept="application/json" style="display:none" />
+        </label>
+        <label class="pill ghost" style="cursor:pointer">
+          Import shopitems.json
+          <input id="importItems" type="file" accept="application/json" style="display:none" />
+        </label>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==========================
+       SAMPLE JSON (used if /data/*.json not found). Copy these out
+       into your project as /data/accounts.json and /data/shopitems.json
+       ========================== -->
+  <script type="application/json" id="sample-accounts">{
+    "users": [
+      {
+        "email": "demo@shop.local",
+        "passwordHash": "", // set on first login with "demo1234" (hashed)
+        "displayName": "Demo User",
+        "payment": {"label": "Visa ending *1234", "address": "Stuttgart, DE"},
+        "kart": []
+      }
+    ]
+  }</script>
+
+  <script type="application/json" id="sample-shopitems">{
+    "items": [
+      {
+        "id": "hoodie-classic",
+        "name": "Classic Hoodie",
+        "price": 49.99,
+        "image": "https://images.unsplash.com/photo-1544441893-675973e31985?q=80&w=1200&auto=format&fit=crop",
+        "description": "Cozy heavyweight hoodie for everyday wear.",
+        "details": "80% cotton, 20% poly. Machine wash cold. Unisex fit."
+      },
+      {
+        "id": "cap-logo",
+        "name": "Logo Cap",
+        "price": 24.5,
+        "image": "https://images.unsplash.com/photo-1603252109303-2751441d9b43?q=80&w=1200&auto=format&fit=crop",
+        "description": "Adjustable dad cap with embroidered logo.",
+        "details": "Low profile. One size fits most."
+      },
+      {
+        "id": "mug-steel",
+        "name": "Steel Mug",
+        "price": 18.0,
+        "image": "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?q=80&w=1200&auto=format&fit=crop",
+        "description": "Insulated mug for hot & cold drinks.",
+        "details": "Double-wall 18/8 stainless steel, 350ml."
+      },
+      {
+        "id": "tee-soft",
+        "name": "Soft Tee",
+        "price": 22.0,
+        "image": "https://images.unsplash.com/photo-1520975916090-3105956dac38?q=80&w=1200&auto=format&fit=crop",
+        "description": "Ultra-soft T-shirt with relaxed fit.",
+        "details": "100% combed cotton, pre-shrunk."
+      }
+    ]
+  }</script>
+
+  <!-- ==========================
+       APP SCRIPT
+       ========================== -->
+  <script>
+    const qs = (sel, el=document) => el.querySelector(sel);
+    const qsa = (sel, el=document) => [...el.querySelectorAll(sel)];
+
+    const fmt = (n) => new Intl.NumberFormat(undefined,{style:'currency',currency:'EUR'}).format(n);
+
+    const STORAGE_KEYS = {
+      accounts: 'shop_accounts',
+      items: 'shop_items',
+      activeEmail: 'active_account_email',
+      guestKart: 'guest_kart',
+      info: 'page_info_html',
+      about: 'page_about_html'
+    };
+
+    const state = {
+      items: [],
+      accounts: { users: [] },
+      activeUser: null,
+      get kart(){
+        return state.activeUser ? (state.activeUser.kart || []) : (JSON.parse(localStorage.getItem(STORAGE_KEYS.guestKart)||'[]'))
+      }
+    };
+
+    // -------------- Data loading / persistence --------------
+    async function loadJSON(url){
+      try{
+        const res = await fetch(url,{cache:'no-store'});
+        if(!res.ok) throw new Error('not ok');
+        return await res.json();
+      }catch(e){ return null; }
+    }
+
+    async function loadItems(){
+      let data = await loadJSON('./data/shopitems.json');
+      if(!data){
+        try{ data = JSON.parse(qs('#sample-shopitems').textContent); }catch{ data={items:[]} }
+      }
+      state.items = data.items || [];
+      localStorage.setItem(STORAGE_KEYS.items, JSON.stringify(state.items));
+    }
+
+    async function loadAccounts(){
+      let data = await loadJSON('./data/accounts.json');
+      if(!data){
+        try{ data = JSON.parse(qs('#sample-accounts').textContent); }catch{ data={users:[]} }
+      }
+      state.accounts = { users: data.users || [] };
+      const activeEmail = localStorage.getItem(STORAGE_KEYS.activeEmail);
+      state.activeUser = state.accounts.users.find(u=>u.email===activeEmail) || null;
+      // Persist locally as fallback
+      localStorage.setItem(STORAGE_KEYS.accounts, JSON.stringify(state.accounts));
+    }
+
+    function saveAccountsLocally(){
+      localStorage.setItem(STORAGE_KEYS.accounts, JSON.stringify(state.accounts));
+    }
+
+    function setActiveUser(user){
+      state.activeUser = user;
+      if(user){ localStorage.setItem(STORAGE_KEYS.activeEmail, user.email); }
+      else{ localStorage.removeItem(STORAGE_KEYS.activeEmail); }
+      updateAuthUI();
+      renderKartBadge();
+    }
+
+    async function hashPassword(pwd){
+      const enc = new TextEncoder();
+      const buf = await crypto.subtle.digest('SHA-256', enc.encode(pwd));
+      return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+
+    async function login(email, password){
+      const user = state.accounts.users.find(u=>u.email===email);
+      if(!user) throw new Error('No account with that email');
+      const h = await hashPassword(password);
+      if(!user.passwordHash){ user.passwordHash = h; saveAccountsLocally(); }
+      if(user.passwordHash !== h) throw new Error('Wrong password');
+      setActiveUser(user);
+      return user;
+    }
+
+    async function signup({email, password, displayName, payment}){
+      if(state.accounts.users.some(u=>u.email===email)) throw new Error('Email already registered');
+      const passwordHash = await hashPassword(password);
+      const user = { email, passwordHash, displayName: displayName||email.split('@')[0], payment: payment||{label:'',address:''}, kart: [] };
+      state.accounts.users.push(user);
+      saveAccountsLocally();
+      setActiveUser(user);
+      return user;
+    }
+
+    // -------------- UI: routing --------------
+    function go(route){
+      qsa('.route').forEach(s=>s.classList.toggle('active', s.id===route));
+      qsa('.tabbar button').forEach(b=>b.classList.toggle('active', b.dataset.route===route));
+    }
+
+    // -------------- Shop grid --------------
+    function renderGrid(){
+      const grid = qs('#grid');
+      const term = qs('#search').value.trim().toLowerCase();
+      const sort = qs('#sortSelect').value;
+      let items = [...state.items].filter(i => !term || (i.name+" "+i.description).toLowerCase().includes(term));
+      if(sort==='price-asc') items.sort((a,b)=>a.price-b.price);
+      if(sort==='price-desc') items.sort((a,b)=>b.price-a.price);
+      if(sort==='name') items.sort((a,b)=>a.name.localeCompare(b.name));
+
+      grid.innerHTML = items.map(i=>`
+        <article class="card" role="article" aria-label="${i.name}">
+          <div class="img" style="background-image:url('${i.image}')" aria-hidden="true"></div>
+          <div class="meta">
+            <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline">
+              <div style="font-weight:700">${i.name}</div>
+              <div class="price">${fmt(i.price)}</div>
+            </div>
+            <div class="sub">${i.description}</div>
+          </div>
+          <div class="actions">
+            <button class="pill" data-view="${i.id}">View</button>
+            <button class="pill ghost" data-add="${i.id}">Add</button>
+          </div>
+        </article>
+      `).join('');
+
+      // Wire buttons
+      qsa('[data-view]').forEach(btn=>btn.addEventListener('click',()=>openProduct(btn.dataset.view)));
+      qsa('[data-add]').forEach(btn=>btn.addEventListener('click',()=>addToKart(btn.dataset.add,1)));
+    }
+
+    // -------------- Product modal --------------
+    let currentProduct = null;
+    function openProduct(id){
+      const item = state.items.find(x=>x.id===id); if(!item) return;
+      currentProduct = item;
+      qs('#pmTitle').textContent = item.name;
+      qs('#pmImg').style.backgroundImage = `url('${item.image}')`;
+      qs('#pmPrice').textContent = fmt(item.price);
+      qs('#pmDesc').textContent = `${item.description} ${item.details?('— '+item.details):''}`;
+      qs('#pmQty').value = 1;
+      qs('#productModal').showModal();
+    }
+
+    qs('#addToKartBtn').addEventListener('click',()=>{
+      const qty = Math.max(1, parseInt(qs('#pmQty').value||'1',10));
+      addToKart(currentProduct?.id, qty);
+      qs('#productModal').close();
+      openKart();
+    });
+    qs('#buyNowBtn').addEventListener('click',()=>{
+      const qty = Math.max(1, parseInt(qs('#pmQty').value||'1',10));
+      addToKart(currentProduct?.id, qty);
+      qs('#productModal').close();
+      openKart(true); // jump to checkout
+    });
+    qsa('[data-close]').forEach(el=>el.addEventListener('click', e=>{
+      const dlg = e.target.closest('dialog'); if(dlg) dlg.close();
+    }));
+
+    // -------------- Kart --------------
+    function persistKart(){
+      if(state.activeUser){
+        state.activeUser.kart = state.activeUser.kart || [];
+        saveAccountsLocally();
+      }else{
+        localStorage.setItem(STORAGE_KEYS.guestKart, JSON.stringify(state.kart));
+      }
+    }
+
+    function addToKart(id, qty=1){
+      if(!id) return;
+      const k = state.activeUser ? (state.activeUser.kart = state.activeUser.kart || []) : (JSON.parse(localStorage.getItem(STORAGE_KEYS.guestKart)||'[]'));
+      const found = k.find(it=>it.id===id);
+      if(found) found.qty += qty; else k.push({id, qty});
+      if(!state.activeUser) localStorage.setItem(STORAGE_KEYS.guestKart, JSON.stringify(k));
+      persistKart();
+      renderKartBadge();
+    }
+
+    function setKartQty(id, qty){
+      const k = state.activeUser ? state.activeUser.kart : JSON.parse(localStorage.getItem(STORAGE_KEYS.guestKart)||'[]');
+      const it = k.find(x=>x.id===id); if(!it) return;
+      if(qty<=0){
+        const idx = k.indexOf(it); k.splice(idx,1);
+      }else{
+        it.qty = qty;
+      }
+      if(state.activeUser) saveAccountsLocally(); else localStorage.setItem(STORAGE_KEYS.guestKart, JSON.stringify(k));
+      renderKartBadge();
+      renderKartList();
+    }
+
+    function clearKart(){
+      if(state.activeUser){ state.activeUser.kart = []; saveAccountsLocally(); }
+      else{ localStorage.removeItem(STORAGE_KEYS.guestKart); }
+      renderKartBadge();
+      renderKartList();
+    }
+
+    function kartItemsDetailed(){
+      const k = state.kart;
+      return k.map(row=>({
+        ...row,
+        product: state.items.find(i=>i.id===row.id)
+      })).filter(x=>!!x.product);
+    }
+
+    function kartTotals(){
+      const rows = kartItemsDetailed();
+      const subtotal = rows.reduce((s,r)=> s + r.product.price * r.qty, 0);
+      return { subtotal };
+    }
+
+    function renderKartBadge(){
+      const count = state.kart.reduce((s,r)=>s+r.qty,0);
+      qs('#kartCount').textContent = count;
+    }
+
+    function renderKartList(){
+      const container = qs('#kartContent');
+      const rows = kartItemsDetailed();
+      if(rows.length===0){ container.innerHTML = '<div class="muted">Your kart is empty.</div>'; qs('#subtotal').textContent = fmt(0); return; }
+      container.innerHTML = rows.map(r=>`
+        <div class="item">
+          <div class="thumb" style="background-image:url('${r.product.image}')"></div>
+          <div>
+            <div style="font-weight:700">${r.product.name}</div>
+            <div class="muted">${fmt(r.product.price)} each</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" min="0" value="${r.qty}" data-qty="${r.product.id}" class="input" style="width:84px" />
+          </div>
+        </div>
+      `).join('');
+      qsa('[data-qty]').forEach(inp=>{
+        inp.addEventListener('change',()=> setKartQty(inp.dataset.qty, Math.max(0, parseInt(inp.value||'0',10))));
+      });
+      qs('#subtotal').textContent = fmt(kartTotals().subtotal);
+    }
+
+    function openKart(jumpToCheckout=false){
+      const dr = qs('#kartDrawer');
+      dr.classList.add('open');
+      dr.setAttribute('aria-hidden','false');
+      renderKartList();
+      if(jumpToCheckout) setTimeout(()=>qs('#checkoutBtn').click(), 200);
+    }
+    function closeKart(){
+      const dr = qs('#kartDrawer');
+      dr.classList.remove('open');
+      dr.setAttribute('aria-hidden','true');
+    }
+
+    // -------------- Checkout --------------
+    function openCheckout(){
+      const rows = kartItemsDetailed();
+      if(rows.length===0){ alert('Your kart is empty.'); return; }
+      const sum = qs('#checkoutSummary');
+      sum.innerHTML = rows.map(r=>`<div class="muted">${r.product.name} × ${r.qty}</div><div>${fmt(r.product.price*r.qty)}</div>`).join('')+
+        `<div class="muted">Total</div><div class="price">${fmt(kartTotals().subtotal)}</div>`;
+      const sel = qs('#checkoutPayment');
+      sel.innerHTML = '';
+      if(state.activeUser && state.activeUser.payment){
+        const opt = document.createElement('option');
+        opt.value = 'saved';
+        opt.textContent = state.activeUser.payment.label || 'Saved method';
+        sel.appendChild(opt);
+      }
+      const guest = document.createElement('option');
+      guest.value = 'cod'; guest.textContent = 'Pay on delivery (demo)';
+      sel.appendChild(guest);
+      qs('#checkoutModal').showModal();
+    }
+
+    function placeOrder(){
+      // Demo: simply clear kart and show a confirmation.
+      const total = kartTotals().subtotal;
+      clearKart();
+      qs('#checkoutModal').close();
+      closeKart();
+      alert('Order placed! Total '+fmt(total)+"\n(Connect to your server/payment provider in production.)");
+    }
+
+    // -------------- Auth UI --------------
+    function updateAuthUI(){
+      const btn = qs('#loginBtn');
+      if(state.activeUser){
+        btn.textContent = state.activeUser.displayName;
+        btn.classList.add('ghost');
+        btn.onclick = () => {
+          // Tiny profile popup
+          const choice = confirm(`Logged in as ${state.activeUser.displayName}\n\nOK: Log out\nCancel: Keep logged in`);
+          if(choice){ setActiveUser(null); }
+        };
+      }else{
+        btn.textContent = 'Login';
+        btn.onclick = () => qs('#authModal').showModal();
+      }
+    }
+
+    // -------------- Editable Info/About --------------
+    function initEditable(section){
+      const editBtn = qs('#edit'+section);
+      const saveBtn = qs('#save'+section);
+      const box = qs('#'+section.toLowerCase()+'Content');
+      const key = STORAGE_KEYS[section.toLowerCase()];
+      const saved = localStorage.getItem(key);
+      if(saved) box.innerHTML = saved;
+      editBtn.addEventListener('click',()=>{ box.contentEditable = box.isContentEditable ? 'false':'true'; editBtn.textContent = box.isContentEditable ? 'Edit':'Stop Editing'; box.focus(); });
+      saveBtn.addEventListener('click',()=>{ localStorage.setItem(key, box.innerHTML); saveBtn.textContent='Saved ✓'; setTimeout(()=>saveBtn.textContent='Save',800); });
+    }
+
+    // -------------- Export / Import helpers --------------
+    function download(filename, text){
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([text],{type:'application/json'}));
+      a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+    }
+
+    function exportAccounts(){ download('accounts.json', JSON.stringify(state.accounts,null,2)); }
+    function exportItems(){ download('shopitems.json', JSON.stringify({items: state.items},null,2)); }
+    function exportGuestKart(){ download('guest-kart.json', JSON.stringify(state.kart,null,2)); }
+
+    function importJson(file, cb){
+      const r = new FileReader(); r.onload = ()=>{ try{ cb(JSON.parse(r.result)); }catch{ alert('Invalid JSON'); } }; r.readAsText(file);
+    }
+
+    // -------------- Wire up --------------
+    function wire(){
+      // Tabs
+      qsa('#tabbar button').forEach(b=> b.addEventListener('click',()=> go(b.dataset.route)));
+      // Search / sort
+      qs('#search').addEventListener('input',renderGrid);
+      qs('#sortSelect').addEventListener('change',renderGrid);
+      // Kart open/close
+      qs('#kartBtn').addEventListener('click',()=> openKart());
+      qs('#closeKart').addEventListener('click',()=> closeKart());
+      // Kart actions
+      qs('#clearKartBtn').addEventListener('click',()=> clearKart());
+      qs('#checkoutBtn').addEventListener('click',()=> openCheckout());
+      qs('#placeOrderBtn').addEventListener('click',()=> placeOrder());
+      // Auth buttons
+      qs('#doLogin').addEventListener('click', async ()=>{
+        try{
+          const email = qs('#authEmail').value.trim();
+          const pass = qs('#authPass').value;
+          await login(email, pass);
+          qs('#authModal').close();
+        }catch(e){ alert(e.message); }
+      });
+      qs('#doSignup').addEventListener('click', async ()=>{
+        try{
+          const email = qs('#authEmail').value.trim();
+          const pass = qs('#authPass').value;
+          const name = qs('#authName').value.trim();
+          const payment = { label: qs('#payLabel').value.trim(), address: qs('#payAddr').value.trim() };
+          if(!email || !pass) throw new Error('Email and password required');
+          await signup({email,password:pass,displayName:name,payment});
+          qs('#authModal').close();
+        }catch(e){ alert(e.message); }
+      });
+      // Info/About editors
+      initEditable('Info');
+      initEditable('About');
+      // Exports / Imports
+      qs('#exportAccounts').addEventListener('click',exportAccounts);
+      qs('#exportItems').addEventListener('click',exportItems);
+      qs('#exportKarts').addEventListener('click',exportGuestKart);
+      qs('#importAccounts').addEventListener('change', (e)=>{
+        const f = e.target.files?.[0]; if(!f) return;
+        importJson(f, (data)=>{ if(!data.users){ alert('accounts.json must have {"users": [...]}'); return; } state.accounts=data; saveAccountsLocally(); setActiveUser(null); alert('Accounts imported.'); });
+      });
+      qs('#importItems').addEventListener('change', (e)=>{
+        const f = e.target.files?.[0]; if(!f) return;
+        importJson(f, (data)=>{ if(!data.items){ alert('shopitems.json must have {"items": [...]}'); return; } state.items=data.items; localStorage.setItem(STORAGE_KEYS.items, JSON.stringify(state.items)); renderGrid(); alert('Items imported.'); });
+      });
+      // Close modals with ESC
+      qsa('dialog').forEach(d=> d.addEventListener('cancel', e=>{ e.preventDefault(); d.close(); }));
+    }
+
+    // -------------- Init --------------
+    (async function init(){
+      await Promise.all([loadItems(), loadAccounts()]);
+      wire();
+      renderGrid();
+      updateAuthUI();
+      renderKartBadge();
+    })();
+  </script>
+</body>
+</html>
