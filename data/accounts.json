@@ -1,0 +1,6 @@
+{ 
+  "users": 
+  [ 
+    { "email":"a@b.c","passwordHash":"<sha256>","displayName":"Edo","payment":{"label":"","address":""},"kart":[{"id":"tee-soft","qty":2}] } 
+  ] 
+}
