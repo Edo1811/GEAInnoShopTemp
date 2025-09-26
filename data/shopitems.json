@@ -1,0 +1,6 @@
+{ "items":
+  [ 
+    { "id":"tee-soft","name":"Soft Tee","price":22,"image":"https://www.rottler.com/wp-content/uploads/medow-mouse.jpg","description":"The best mouse you will find on the internet! ","details":"This mouse gets up to 8ms reaction time, perfect for gaming and streaming!" }, 
+    { "id":"Longnamefortestinghowthesitehandleslongnames","name":"Long name to test how the site handles long names...","price":"67,42","image":"https://images2.minutemediacdn.com/image/upload/c_fill,w_1200,ar_4:3,f_auto,q_auto,g_auto/shape/cover/sport/adolph-primary-26724cd464db61e3114ee0b0032854dd.jpg","description":"Long ahh name fr fr","details":"too lazy to add something useful here so imma just stick to hi"}
+  ]
+}
